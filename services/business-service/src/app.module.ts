@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env/env.validation';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProductTypesModule } from './modules/product-types/product-types.module';
 import { BusinessModule } from './modules/business/business.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 
@@ -16,6 +17,7 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
     HealthModule,
     BusinessModule,
     SchedulesModule,
+    ProductTypesModule,
   ],
 })
 export class AppModule {}
