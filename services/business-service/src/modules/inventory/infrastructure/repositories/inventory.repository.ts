@@ -154,49 +154,55 @@ export class InventoryRepository {
     return transactionResult;
   }
   async confirmReservation(reservationCode: string) {
-    const transactionResult = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const reservation = await tx.inventory_reservation.findUnique({
-        where: { reservation_code: reservationCode },
-        include: { inventory_reservation_detail: true }
-      });
-
-      if (!reservation || reservation.reservation_status !== 'active') {
-        throw new ConflictException('Reservation not found or cannot be confirmed');
-      }
-
-      for (const detail of reservation.inventory_reservation_detail) {
-        // Al confirmar, el stock disponible ya se descontó en la reserva.
-        // Solo necesitamos descontar el stock reservado porque ya es una venta en firme.
-        const stock = await tx.product_stock.update({
-          where: { product_id: detail.product_id },
-          data: {
-            reserved_quantity: { decrement: detail.requested_quantity }
-          }
+    const transactionResult = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const reservation = await tx.inventory_reservation.findUnique({
+          where: { reservation_code: reservationCode },
+          include: { inventory_reservation_detail: true },
         });
 
-        await tx.inventory_movement.create({
-          data: {
-            product_id: detail.product_id,
-            movement_type: inventory_movement_movement_type.order_confirmation,
-            quantity: detail.requested_quantity,
-            previous_quantity: stock.available_quantity, 
-            new_quantity: stock.available_quantity,
-            source_reference: reservationCode,
-            reason: 'Reservation confirmed for order'
-          }
-        });
-      }
-
-      const updatedReservation = await tx.inventory_reservation.update({
-        where: { reservation_code: reservationCode },
-        data: {
-          reservation_status: inventory_reservation_reservation_status.confirmed,
-          confirmed_at: new Date()
+        if (!reservation || reservation.reservation_status !== 'active') {
+          throw new ConflictException(
+            'Reservation not found or cannot be confirmed',
+          );
         }
-      });
 
-      return updatedReservation;
-    });
+        for (const detail of reservation.inventory_reservation_detail) {
+          // Al confirmar, el stock disponible ya se descontó en la reserva.
+          // Solo necesitamos descontar el stock reservado porque ya es una venta en firme.
+          const stock = await tx.product_stock.update({
+            where: { product_id: detail.product_id },
+            data: {
+              reserved_quantity: { decrement: detail.requested_quantity },
+            },
+          });
+
+          await tx.inventory_movement.create({
+            data: {
+              product_id: detail.product_id,
+              movement_type:
+                inventory_movement_movement_type.order_confirmation,
+              quantity: detail.requested_quantity,
+              previous_quantity: stock.available_quantity,
+              new_quantity: stock.available_quantity,
+              source_reference: reservationCode,
+              reason: 'Reservation confirmed for order',
+            },
+          });
+        }
+
+        const updatedReservation = await tx.inventory_reservation.update({
+          where: { reservation_code: reservationCode },
+          data: {
+            reservation_status:
+              inventory_reservation_reservation_status.confirmed,
+            confirmed_at: new Date(),
+          },
+        });
+
+        return updatedReservation;
+      },
+    );
 
     return transactionResult;
   }

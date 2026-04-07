@@ -38,7 +38,9 @@ export class InventoryService {
     return result;
   }
   async confirmReservation(dto: ConfirmReservationDto) {
-    const result = await this.inventoryRepository.confirmReservation(dto.reservationCode);
+    const result = await this.inventoryRepository.confirmReservation(
+      dto.reservationCode,
+    );
     return result;
   }
 }

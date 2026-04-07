@@ -30,7 +30,9 @@ export class InventoryInternalController {
 
   @Post('confirm')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Confirmar una reserva para convertirla en pedido en firme' })
+  @ApiOperation({
+    summary: 'Confirmar una reserva para convertirla en pedido en firme',
+  })
   async confirmReservation(@Body() dto: ConfirmReservationDto) {
     const result = await this.inventoryService.confirmReservation(dto);
     return result;
