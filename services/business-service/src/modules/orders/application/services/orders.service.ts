@@ -2,11 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
   Prisma,
   business_order_cancelled_by,
+  business_order_delivery_delivery_type,
   business_order_financial_status_snapshot,
   business_order_order_status,
   business_order_penalty_type_snapshot,
@@ -40,6 +42,11 @@ import {
   PrismaOrdersRepository,
 } from '../../infrastructure/repositories/prisma-orders.repository';
 import { LogisticsPayloadResponseDto } from '../../presentation/dto/logistics-payload-response.dto';
+import { LogisticsClientService } from '../../../logistics-client/logistics-client.service';
+import { CreateLogisticsDeliveryDto } from '../../../logistics-client/presentation/dto/create-logistics-delivery.dto';
+import { LinkBusinessOrderDeliveryDto } from '../../../deliveries/presentation/dto/link-business-order-delivery.dto';
+import { DeliveriesService } from '../../../deliveries/application/services/deliveries.service';
+import { DispatchOrderResponseDto } from '../../presentation/dto/dispatch-order-response.dto';
 
 type CancellationPenaltyEvaluation = {
   appliesPenalty: boolean;
@@ -53,9 +60,13 @@ type CancellationPenaltyEvaluation = {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly ordersRepository: PrismaOrdersRepository,
     private readonly inventoryService: InventoryService,
+    private readonly logisticsClientService: LogisticsClientService,
+    private readonly deliveriesService: DeliveriesService,
   ) {}
 
   async create(
@@ -358,6 +369,99 @@ export class OrdersService {
     );
 
     return mapBusinessOrderToResponseDto(updated);
+  }
+
+  async requestLogisticsDispatch(
+    businessId: number,
+    businessOrderId: number,
+  ): Promise<DispatchOrderResponseDto> {
+    const order = await this.getOrderForLogisticsByBusinessAndId(
+      businessId,
+      businessOrderId,
+    );
+
+    if (this.isCancelledStatus(order.order_status)) {
+      throw new ConflictException('Cancelled orders cannot be dispatched.');
+    }
+
+    const allowedStatuses = [
+      business_order_order_status.confirmed,
+      business_order_order_status.preparing,
+      business_order_order_status.ready_for_pickup,
+    ];
+
+    if (!allowedStatuses.includes(order.order_status)) {
+      throw new ConflictException(
+        `Order status ${order.order_status} does not allow dispatching to logistics. ` +
+        `Allowed statuses: ${allowedStatuses.join(', ')}.`,
+      );
+    }
+
+    if (order.business_order_delivery) {
+      throw new ConflictException(
+        'A delivery is already linked to this order.',
+      );
+    }
+
+    const details = order.business_order_detail.map(
+      (d) => `${d.quantity}x ${d.product_name_snapshot}`,
+    );
+
+    const deliveryDto: CreateLogisticsDeliveryDto = {
+      tipo_origen: 'pedido',
+      modulo_origen: 'negocios',
+      orden_id: order.business_order_id,
+      empresa_id: businessId,
+      cliente_id: order.external_customer_id,
+      categoria_codigo: 'PACKAGE',
+      metodo_pago: 'CASH',
+      tarifa_ofrecida: 0,
+      monto_cobrar: Number(order.total_paid_amount_snapshot),
+      distancia_estimada_km: undefined,
+      negocio_nombre: order.business.trade_name,
+      negocio_telefono: undefined,
+      negocio_direccion: order.business.address ?? '',
+      cliente_nombre: undefined,
+      cliente_telefono: undefined,
+      direccion_entrega: undefined,
+      detalles_orden: details,
+    };
+
+    this.logger.log(
+      `Creating delivery in logistics for order ${order.external_order_code}`,
+    );
+
+    const logisticsDelivery =
+      await this.logisticsClientService.createDelivery(deliveryDto);
+
+    this.logger.log(
+      `Delivery created in logistics with ID ${logisticsDelivery.id} for order ${order.external_order_code}`,
+    );
+
+    const linkDto: LinkBusinessOrderDeliveryDto = {
+      externalOrderCode: order.external_order_code,
+      deliveryType: business_order_delivery_delivery_type.home_delivery,
+      branchId: 0,
+      externalDeliveryCode: String(logisticsDelivery.id),
+      externalLogisticsOrderCode: undefined,
+      baseDeliveryFeeSnapshot: 0,
+      finalDeliveryFeeSnapshot: 0,
+      recipientNameSnapshot: undefined,
+      recipientPhoneSnapshot: undefined,
+      deliveryAddressSnapshot: undefined,
+      deliveryReferenceSnapshot: undefined,
+      deliveryNotesSnapshot: undefined,
+      estimatedDistanceKm: logisticsDelivery.distancia_estimada_km ?? undefined,
+      observation: 'Delivery dispatched from business service to logistics.',
+    };
+
+    const localDelivery = await this.deliveriesService.linkDelivery(linkDto);
+
+    return {
+      success: true,
+      logisticsDelivery,
+      localDelivery,
+    };
   }
 
   async evaluateCancellationPenalty(

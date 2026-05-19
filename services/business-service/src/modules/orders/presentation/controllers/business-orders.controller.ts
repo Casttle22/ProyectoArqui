@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -17,6 +19,7 @@ import {
 import { OrdersService } from '../../application/services/orders.service';
 import { BusinessOrderResponseDto } from '../dto/business-order-response.dto';
 import { CreateBusinessOrderDto } from '../dto/create-business-order.dto';
+import { DispatchOrderResponseDto } from '../dto/dispatch-order-response.dto';
 import { ListBusinessOrdersQueryDto } from '../dto/list-business-orders-query.dto';
 import { LogisticsPayloadResponseDto } from '../dto/logistics-payload-response.dto';
 import { UpdateBusinessOrderStatusDto } from '../dto/update-business-order-status.dto';
@@ -92,6 +95,25 @@ export class BusinessOrdersController {
       businessId,
       businessOrderId,
       dto,
+    );
+  }
+
+  @Post(':businessOrderId/dispatch')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Dispatch an order to logistics for delivery.',
+    description:
+      'Creates a delivery in the logistics microservice and links it to the order. ' +
+      'Order must be in confirmed, preparing, or ready_for_pickup status.',
+  })
+  @ApiOkResponse({ type: DispatchOrderResponseDto })
+  async dispatchToLogistics(
+    @Param('businessId', ParseIntPipe) businessId: number,
+    @Param('businessOrderId', ParseIntPipe) businessOrderId: number,
+  ): Promise<DispatchOrderResponseDto> {
+    return this.ordersService.requestLogisticsDispatch(
+      businessId,
+      businessOrderId,
     );
   }
 }

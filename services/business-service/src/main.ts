@@ -29,11 +29,10 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
 
-  console.log(
-    `Swagger available on http://localhost:${process.env.PORT ?? 3000}/api/docs`,
-  );
+  console.log(`Swagger available at /api/docs`);
 }
 
 void bootstrap();

@@ -4,6 +4,12 @@
 
 Este documento define el lado NEGOCIOS de la integracion con LOGISTICA sin acoplar este servicio a rutas o conceptos de Restaurantes.
 
+## Stack de Integracion
+
+- **Logistics API Base**: `http://localhost:3002` (configurable via `BROKER_SERVICE_URL`). El Broker enruta las peticiones a Logística como proxy.
+- **Cliente HTTP**: `@nestjs/axios` (HttpModule con timeout 10s)
+- **Autenticacion**: Ninguna por ahora (servicios internos)
+
 ## Endpoint oficial que debe consumir LOGISTICA
 
 - `GET /api/internal/business-orders/:externalOrderCode/logistics-payload`
@@ -119,3 +125,89 @@ LOGISTICA deberia exponer una ruta propia para negocios, por ejemplo:
 - `POST /api/logistica/entregas/negocios/:businessId/pedidos/:businessOrderId`
 
 usando `branchId` o `sucursal_id` como `0` o `null` para este dominio.
+
+---
+
+## Integracion Actual (LogisticsClientModule)
+
+Se implemento un modulo de integracion directa con el microservicio de Logistica.
+
+### Componentes Implementados
+
+| Componente | Archivo | Proposito |
+|---|---|---|
+| `LogisticsClientService` | `src/modules/logistics-client/logistics-client.service.ts` | Cliente HTTP para consumir APIs de Logistica |
+| `LogisticsCallbackController` | `src/modules/logistics-client/presentation/controllers/logistics-callback.controller.ts` | Endpoint callback para notificaciones de Logistica |
+| `LogisticsClientModule` | `src/modules/logistics-client/logistics-client.module.ts` | Modulo NestJS registrado globalmente |
+
+### Metodos del LogisticsClientService
+
+| Metodo | Endpoint de Logistica | Proposito |
+|---|---|---|
+| `createDelivery(dto)` | `POST /api/logistica/entregas` | Crear una entrega en el modulo de logistica |
+| `getDelivery(id)` | `GET /api/logistica/entregas/:id` | Consultar detalle de una entrega |
+| `getDeliveryHistory(id)` | `GET /api/logistica/entregas/:id/historial` | Obtener historial de estados |
+| `listDeliveries(modulo, page, limit)` | `GET /api/logistica/entregas?modulo_origen=...` | Listar entregas con filtros |
+| `checkHealth()` | `GET /health` | Verificar disponibilidad de Logistica |
+
+### Endpoint de Callback (Logistica → Negocios)
+
+Logistica notifica cambios de estado a:
+
+```
+PATCH /api/negocios/{negocioId}/pedidos/{pedidoId}/estado-logistica
+```
+
+**Request Body:**
+```json
+{
+  "negocioId": 1,
+  "pedidoId": 25,
+  "estado": "courier_assigned",
+  "codigo_entrega": "DEL-12345",
+  "codigo_orden_logistica": "LOG-ORD-10001",
+  "repartidor_id": 27,
+  "observacion": "Courier assigned to order"
+}
+```
+
+**Estados soportados:**
+- `pending_assignment`, `courier_assigned`, `ready_for_pickup`, `picked_up`, `in_transit`, `delivered`, `delivery_failed`, `cancelled`
+
+### Endpoint de Despacho (Negocios → Logistica)
+
+Para enviar un pedido a Logistica manualmente:
+
+```
+POST /api/businesses/{businessId}/orders/{businessOrderId}/dispatch
+```
+
+Este endpoint:
+1. Valida que el pedido este en estado `confirmed`, `preparing` o `ready_for_pickup`
+2. Construye el payload de entrega con los datos del pedido
+3. Llama a Logistica para crear la entrega (`POST /api/logistica/entregas`)
+4. Vincula la entrega localmente (`business_order_delivery`)
+5. Retorna el detalle de la entrega creada (tanto en logistica como local)
+
+### Flujo Completo Recomendado
+
+```
+[NEGOCIOS]                          [LOGISTICA]
+    |                                    |
+    |── POST /api/logistica/entregas ───>|  (crear entrega)
+    |<── 201 { id, estado, ... } ────────|
+    |                                    |
+    |── (vincula delivery local)         |
+    |                                    |
+    |                                    |── PATCH /api/negocios/{id}/pedidos/{id}/estado-logistica
+    |<────────────────────────────────────|  (notifica cambio de estado)
+    |                                    |
+    |── GET /api/logistica/entregas/:id ─>|  (consultar estado)
+    |<── 200 { estado, ... } ────────────|
+```
+
+### Variables de Entorno
+
+| Variable | Default | Descripcion |
+|---|---|---|
+| `BROKER_SERVICE_URL` | `http://localhost:3002` | URL base del Broker. El Broker actúa como proxy y enruta `/api/logistica/*` hacia Logística. |

@@ -13,6 +13,7 @@ import { DeliveriesModule } from './modules/deliveries/deliveries.module';
 import { DeliveryFeeAdjustmentsModule } from './modules/delivery-fee-adjustments/delivery-fee-adjustments.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { LogisticsClientModule } from './modules/logistics-client/logistics-client.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     DeliveryFeeAdjustmentsModule,
     PromotionsModule,
     MetricsModule,
+    LogisticsClientModule,
   ],
 })
 export class AppModule {}

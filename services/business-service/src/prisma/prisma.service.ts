@@ -29,10 +29,9 @@ export class PrismaService
       database: parsedUrl.pathname.replace(/^\//, ''),
       connectionLimit: 5,
       allowPublicKeyRetrieval: true,
-      ssl:
-        process.env.NODE_ENV === 'production'
-          ? { rejectUnauthorized: true }
-          : undefined,
+      ssl: process.env.DATABASE_REQUIRE_SSL === 'true'
+        ? { rejectUnauthorized: true }
+        : undefined,
     });
 
     super({ adapter });
