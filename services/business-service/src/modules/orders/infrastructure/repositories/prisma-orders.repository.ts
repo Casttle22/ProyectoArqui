@@ -31,6 +31,18 @@ type OrderInclude = {
   };
 };
 
+const logisticsOrderWithRelations =
+  Prisma.validator<Prisma.business_orderDefaultArgs>()({
+    include: {
+      business: true,
+      business_order_detail: {
+        orderBy: {
+          business_order_detail_id: 'asc',
+        },
+      },
+    },
+  });
+
 @Injectable()
 export class PrismaOrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -139,6 +151,25 @@ export class PrismaOrdersRepository {
     });
   }
 
+  async findByIdForLogistics(businessId: number, businessOrderId: number) {
+    return this.prisma.business_order.findFirst({
+      where: {
+        business_order_id: businessOrderId,
+        business_id: businessId,
+      },
+      include: logisticsOrderWithRelations.include,
+    });
+  }
+
+  async findByExternalOrderCodeForLogistics(externalOrderCode: string) {
+    return this.prisma.business_order.findUnique({
+      where: {
+        external_order_code: externalOrderCode,
+      },
+      include: logisticsOrderWithRelations.include,
+    });
+  }
+
   async findPenaltyRule(
     businessId: number,
     orderStatus: cancellation_penalty_rule_applicable_order_status,
@@ -219,4 +250,8 @@ export class PrismaOrdersRepository {
 
 export type BusinessOrderRecord = NonNullable<
   Awaited<ReturnType<PrismaOrdersRepository['findByExternalOrderCode']>>
+>;
+
+export type BusinessOrderLogisticsRecord = Prisma.business_orderGetPayload<
+  typeof logisticsOrderWithRelations
 >;

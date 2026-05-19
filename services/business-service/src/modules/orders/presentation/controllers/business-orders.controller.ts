@@ -18,6 +18,7 @@ import { OrdersService } from '../../application/services/orders.service';
 import { BusinessOrderResponseDto } from '../dto/business-order-response.dto';
 import { CreateBusinessOrderDto } from '../dto/create-business-order.dto';
 import { ListBusinessOrdersQueryDto } from '../dto/list-business-orders-query.dto';
+import { LogisticsPayloadResponseDto } from '../dto/logistics-payload-response.dto';
 import { UpdateBusinessOrderStatusDto } from '../dto/update-business-order-status.dto';
 
 @ApiTags('Business Orders')
@@ -53,6 +54,19 @@ export class BusinessOrdersController {
     @Param('businessOrderId', ParseIntPipe) businessOrderId: number,
   ): Promise<BusinessOrderResponseDto> {
     return this.ordersService.getById(businessId, businessOrderId);
+  }
+
+  @Get(':businessOrderId/logistics')
+  @ApiOperation({ summary: 'Get logistics payload for a business order' })
+  @ApiOkResponse({ type: LogisticsPayloadResponseDto })
+  async getLogisticsPayload(
+    @Param('businessId', ParseIntPipe) businessId: number,
+    @Param('businessOrderId', ParseIntPipe) businessOrderId: number,
+  ): Promise<LogisticsPayloadResponseDto> {
+    return this.ordersService.getLogisticsPayloadByBusinessOrderId(
+      businessId,
+      businessOrderId,
+    );
   }
 
   @Patch(':businessOrderId/preparing')

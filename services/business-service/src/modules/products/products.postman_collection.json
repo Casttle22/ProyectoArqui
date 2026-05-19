@@ -9,7 +9,11 @@
     { "key": "baseUrl", "value": "http://localhost:3000/api" },
     { "key": "businessId", "value": "1" },
     { "key": "productId", "value": "1" },
-    { "key": "productTypeId", "value": "1" }
+    { "key": "productTypeId", "value": "1" },
+    { "key": "businessOrderId", "value": "1" },
+    { "key": "externalOrderCode", "value": "ORD-10001" },
+    { "key": "externalLogisticsOrderCode", "value": "LOG-ORD-10001" },
+    { "key": "externalDeliveryCode", "value": "DEL-10001" }
   ],
   "item": [
     {
@@ -190,6 +194,66 @@
             "method": "GET",
             "description": "Confirma si el producto entra o no al catálogo según visible_in_catalog, estado y soft delete.",
             "url": "{{baseUrl}}/businesses/{{businessId}}/catalog"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LOGISTICA CONTRACT - NEGOCIOS SIDE",
+      "description": "Ejemplos del lado NEGOCIOS para integrarse con LOGISTICA sin usar rutas de Restaurantes.",
+      "item": [
+        {
+          "name": "GET Payload logistico del pedido",
+          "request": {
+            "method": "GET",
+            "description": "Payload oficial que LOGISTICA debe consumir desde NEGOCIOS antes de crear la entrega.",
+            "url": "{{baseUrl}}/internal/business-orders/{{externalOrderCode}}/logistics-payload"
+          }
+        },
+        {
+          "name": "POST Link delivery con respuesta de LOGISTICA",
+          "request": {
+            "method": "POST",
+            "description": "Enlaza en NEGOCIOS la entrega creada por LOGISTICA usando el externalOrderCode original del pedido.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalOrderCode\": \"{{externalOrderCode}}\",\n  \"deliveryType\": \"home_delivery\",\n  \"branchId\": 0,\n  \"externalDeliveryCode\": \"{{externalDeliveryCode}}\",\n  \"externalLogisticsOrderCode\": \"{{externalLogisticsOrderCode}}\",\n  \"recipientNameSnapshot\": null,\n  \"recipientPhoneSnapshot\": null,\n  \"deliveryAddressSnapshot\": null,\n  \"deliveryReferenceSnapshot\": null,\n  \"deliveryNotesSnapshot\": null,\n  \"observation\": \"Delivery enlazado desde LOGISTICA.\"\n}"
+            },
+            "url": "{{baseUrl}}/internal/business-orders/delivery/link"
+          }
+        },
+        {
+          "name": "GET Delivery por pedido",
+          "request": {
+            "method": "GET",
+            "description": "Consulta el snapshot local de entrega en NEGOCIOS usando el externalOrderCode.",
+            "url": "{{baseUrl}}/internal/business-orders/{{externalOrderCode}}/delivery"
+          }
+        },
+        {
+          "name": "GET Delivery por logistics order",
+          "request": {
+            "method": "GET",
+            "description": "Consulta el snapshot local de entrega usando el codigo de LOGISTICA.",
+            "url": "{{baseUrl}}/internal/business-orders/delivery/by-logistics-order/{{externalLogisticsOrderCode}}"
+          }
+        },
+        {
+          "name": "POST Update delivery status",
+          "request": {
+            "method": "POST",
+            "description": "Actualiza en NEGOCIOS el estado de entrega reportado por LOGISTICA.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalLogisticsOrderCode\": \"{{externalLogisticsOrderCode}}\",\n  \"newStatus\": \"courier_assigned\",\n  \"statusOrigin\": \"couriers\",\n  \"observation\": \"Courier asignado desde LOGISTICA.\"\n}"
+            },
+            "url": "{{baseUrl}}/internal/business-orders/delivery/update-status"
           }
         }
       ]

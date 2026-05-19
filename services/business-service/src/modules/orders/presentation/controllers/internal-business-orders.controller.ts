@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { OrdersService } from '../../application/services/orders.service';
 import {
   BusinessOrderResponseDto,
@@ -8,6 +13,7 @@ import {
 import { CancelBusinessOrderDto } from '../dto/cancel-business-order.dto';
 import { ConfirmBusinessOrderDto } from '../dto/confirm-business-order.dto';
 import { EvaluateCancellationPenaltyDto } from '../dto/evaluate-cancellation-penalty.dto';
+import { LogisticsPayloadResponseDto } from '../dto/logistics-payload-response.dto';
 
 @ApiTags('Business Orders (Internal Integrations)')
 @Controller('internal/business-orders')
@@ -21,6 +27,21 @@ export class InternalBusinessOrdersController {
     @Param('externalOrderCode') externalOrderCode: string,
   ): Promise<BusinessOrderResponseDto> {
     return this.ordersService.getByExternalOrderCode(externalOrderCode);
+  }
+
+  @Get(':externalOrderCode/logistics-payload')
+  @ApiOperation({
+    summary:
+      'Get the logistics payload for a business order by external order code',
+  })
+  @ApiParam({ name: 'externalOrderCode', type: 'string' })
+  @ApiOkResponse({ type: LogisticsPayloadResponseDto })
+  async getLogisticsPayloadByExternalOrderCode(
+    @Param('externalOrderCode') externalOrderCode: string,
+  ): Promise<LogisticsPayloadResponseDto> {
+    return this.ordersService.getLogisticsPayloadByExternalOrderCode(
+      externalOrderCode,
+    );
   }
 
   @Post('confirm-order')

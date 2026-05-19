@@ -35,9 +35,11 @@ import { EvaluateCancellationPenaltyDto } from '../../presentation/dto/evaluate-
 import { ListBusinessOrdersQueryDto } from '../../presentation/dto/list-business-orders-query.dto';
 import { UpdateBusinessOrderStatusDto } from '../../presentation/dto/update-business-order-status.dto';
 import {
+  BusinessOrderLogisticsRecord,
   BusinessOrderRecord,
   PrismaOrdersRepository,
 } from '../../infrastructure/repositories/prisma-orders.repository';
+import { LogisticsPayloadResponseDto } from '../../presentation/dto/logistics-payload-response.dto';
 
 type CancellationPenaltyEvaluation = {
   appliesPenalty: boolean;
@@ -208,6 +210,27 @@ export class OrdersService {
   ): Promise<BusinessOrderResponseDto> {
     const order = await this.getOrderByExternalOrderCode(externalOrderCode);
     return mapBusinessOrderToResponseDto(order);
+  }
+
+  async getLogisticsPayloadByExternalOrderCode(
+    externalOrderCode: string,
+  ): Promise<LogisticsPayloadResponseDto> {
+    const order =
+      await this.getOrderForLogisticsByExternalOrderCode(externalOrderCode);
+
+    return this.buildLogisticsPayloadResponse(order);
+  }
+
+  async getLogisticsPayloadByBusinessOrderId(
+    businessId: number,
+    businessOrderId: number,
+  ): Promise<LogisticsPayloadResponseDto> {
+    const order = await this.getOrderForLogisticsByBusinessAndId(
+      businessId,
+      businessOrderId,
+    );
+
+    return this.buildLogisticsPayloadResponse(order);
   }
 
   async confirm(
@@ -454,6 +477,26 @@ export class OrdersService {
     return record;
   }
 
+  private async getOrderForLogisticsByBusinessAndId(
+    businessId: number,
+    businessOrderId: number,
+  ): Promise<BusinessOrderLogisticsRecord> {
+    await this.ensureBusinessExists(businessId);
+
+    const record = await this.ordersRepository.findByIdForLogistics(
+      businessId,
+      businessOrderId,
+    );
+
+    if (!record) {
+      throw new NotFoundException(
+        `Business order ${businessOrderId} was not found for business ${businessId}.`,
+      );
+    }
+
+    return record;
+  }
+
   private ensureUniqueProductDetails(details: CreateBusinessOrderDetailDto[]) {
     const seen = new Set<number>();
 
@@ -481,6 +524,57 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  private async getOrderForLogisticsByExternalOrderCode(
+    externalOrderCode: string,
+  ): Promise<BusinessOrderLogisticsRecord> {
+    const order =
+      await this.ordersRepository.findByExternalOrderCodeForLogistics(
+        externalOrderCode,
+      );
+
+    if (!order) {
+      throw new NotFoundException(
+        `Business order with external code ${externalOrderCode} was not found.`,
+      );
+    }
+
+    return order;
+  }
+
+  private buildLogisticsPayloadResponse(
+    order: BusinessOrderLogisticsRecord,
+  ): LogisticsPayloadResponseDto {
+    return {
+      sourceService: 'business-service',
+      sourceType: 'business',
+      businessId: order.business_id,
+      businessOrderId: order.business_order_id,
+      externalOrderCode: order.external_order_code,
+      branchId: 0,
+      branchName: null,
+      businessName: order.business.trade_name,
+      originAddress: order.business.address,
+      originLat: null,
+      originLng: null,
+      customerId: order.external_customer_id,
+      customerName: null,
+      customerPhone: null,
+      destinationAddress: null,
+      destinationLat: null,
+      destinationLng: null,
+      items: order.business_order_detail.map((detail) => ({
+        productId: detail.product_id,
+        name: detail.product_name_snapshot,
+        quantity: detail.quantity,
+        unitPrice: Number(detail.base_unit_price_snapshot),
+      })),
+      subtotalBase: Number(order.base_subtotal_snapshot),
+      totalPaid: Number(order.total_paid_amount_snapshot),
+      currency: order.currency.toUpperCase(),
+      notes: null,
+    };
   }
 
   private async buildCancellationPenaltyEvaluation(
