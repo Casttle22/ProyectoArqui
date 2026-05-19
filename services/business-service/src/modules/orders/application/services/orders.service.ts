@@ -384,7 +384,7 @@ export class OrdersService {
       throw new ConflictException('Cancelled orders cannot be dispatched.');
     }
 
-    const allowedStatuses = [
+    const allowedStatuses: business_order_order_status[] = [
       business_order_order_status.confirmed,
       business_order_order_status.preparing,
       business_order_order_status.ready_for_pickup,

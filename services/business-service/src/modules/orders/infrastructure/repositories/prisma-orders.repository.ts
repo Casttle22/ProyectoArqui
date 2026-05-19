@@ -40,6 +40,7 @@ const logisticsOrderWithRelations =
           business_order_detail_id: 'asc',
         },
       },
+      business_order_delivery: true,
     },
   });
 
