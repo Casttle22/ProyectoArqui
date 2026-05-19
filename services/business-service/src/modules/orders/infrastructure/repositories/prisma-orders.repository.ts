@@ -232,6 +232,20 @@ export class PrismaOrdersRepository {
     };
   }
 
+  async updatePaymentCode(
+    businessOrderId: number,
+    externalPaymentCode: string,
+    client: PrismaOrdersClient = this.prisma,
+  ) {
+    return client.business_order.update({
+      where: { business_order_id: businessOrderId },
+      data: {
+        external_payment_code: externalPaymentCode,
+        updated_at: new Date(),
+      },
+    });
+  }
+
   private buildOrderInclude(): OrderInclude {
     return {
       inventory_reservation: true,

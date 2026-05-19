@@ -42,11 +42,14 @@ import {
   PrismaOrdersRepository,
 } from '../../infrastructure/repositories/prisma-orders.repository';
 import { LogisticsPayloadResponseDto } from '../../presentation/dto/logistics-payload-response.dto';
+import { CobrosClientService } from '../../../cobros-client/cobros-client.service';
+import { CreateCobrosPaymentDto } from '../../../cobros-client/presentation/dto/create-cobros-payment.dto';
 import { LogisticsClientService } from '../../../logistics-client/logistics-client.service';
 import { CreateLogisticsDeliveryDto } from '../../../logistics-client/presentation/dto/create-logistics-delivery.dto';
 import { LinkBusinessOrderDeliveryDto } from '../../../deliveries/presentation/dto/link-business-order-delivery.dto';
 import { DeliveriesService } from '../../../deliveries/application/services/deliveries.service';
 import { DispatchOrderResponseDto } from '../../presentation/dto/dispatch-order-response.dto';
+import { ProcessPaymentResponseDto } from '../../presentation/dto/process-payment-response.dto';
 
 type CancellationPenaltyEvaluation = {
   appliesPenalty: boolean;
@@ -67,6 +70,7 @@ export class OrdersService {
     private readonly inventoryService: InventoryService,
     private readonly logisticsClientService: LogisticsClientService,
     private readonly deliveriesService: DeliveriesService,
+    private readonly cobrosClientService: CobrosClientService,
   ) {}
 
   async create(
@@ -403,6 +407,13 @@ export class OrdersService {
       );
     }
 
+    if (!order.external_payment_code) {
+      throw new ConflictException(
+        'Payment has not been processed for this order. ' +
+        'Call POST /api/businesses/:businessId/orders/:businessOrderId/payment first.',
+      );
+    }
+
     const details = order.business_order_detail.map(
       (d) => `${d.quantity}x ${d.product_name_snapshot}`,
     );
@@ -461,6 +472,45 @@ export class OrdersService {
       success: true,
       logisticsDelivery,
       localDelivery,
+    };
+  }
+
+  async processPayment(
+    businessId: number,
+    businessOrderId: number,
+  ): Promise<ProcessPaymentResponseDto> {
+    const order = await this.getOrderForLogisticsByBusinessAndId(
+      businessId,
+      businessOrderId,
+    );
+
+    if (this.isCancelledStatus(order.order_status)) {
+      throw new ConflictException('Cancelled orders cannot process payment.');
+    }
+
+    if (order.external_payment_code) {
+      throw new ConflictException(
+        `Payment already processed for this order. cobro_id: ${order.external_payment_code}`,
+      );
+    }
+
+    const paymentDto = this.buildCobrosPaymentDto(order);
+    const cobrosPayment = await this.cobrosClientService.createPayment(paymentDto);
+
+    await this.ordersRepository.updatePaymentCode(
+      order.business_order_id,
+      cobrosPayment.payment_id,
+    );
+
+    this.logger.log(
+      `Payment processed for order ${order.external_order_code}: cobro_id ${cobrosPayment.payment_id}`,
+    );
+
+    return {
+      success: true,
+      cobro_id: cobrosPayment.payment_id,
+      status: cobrosPayment.status,
+      settlement_status: cobrosPayment.settlement_status,
     };
   }
 
@@ -897,5 +947,33 @@ export class OrdersService {
     }
 
     return 'unique field';
+  }
+
+  private buildCobrosPaymentDto(
+    order: BusinessOrderLogisticsRecord,
+  ): CreateCobrosPaymentDto {
+    const details = order.business_order_detail.map((d) => ({
+      product_id: String(d.product_id),
+      product_name: d.product_name_snapshot,
+      quantity: d.quantity,
+      unit_price: Number(d.base_unit_price_snapshot),
+      item_discount: 0,
+      is_combo: false,
+    }));
+
+    return {
+      customer_id: String(order.external_customer_id),
+      courier_id: '00000000-0000-0000-0000-000000000000',
+      business_id: String(order.business_id),
+      delivery_address_id: '00000000-0000-0000-0000-000000000000',
+      reservation_id: '',
+      order_id: order.external_order_code,
+      currency_code: 'GTQ',
+      payment_method_code: 'CASH',
+      service_fee: Number(order.service_fee_amount_snapshot),
+      tip_amount: Number(order.tip_amount_snapshot),
+      items: details,
+      idempotency_key: `payment-${order.external_order_code}-${order.business_order_id}`,
+    };
   }
 }

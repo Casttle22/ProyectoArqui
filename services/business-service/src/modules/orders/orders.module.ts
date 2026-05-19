@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CobrosClientModule } from '../cobros-client/cobros-client.module';
 import { DeliveriesModule } from '../deliveries/deliveries.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { LogisticsClientModule } from '../logistics-client/logistics-client.module';
@@ -8,7 +9,7 @@ import { BusinessOrdersController } from './presentation/controllers/business-or
 import { InternalBusinessOrdersController } from './presentation/controllers/internal-business-orders.controller';
 
 @Module({
-  imports: [DeliveriesModule, InventoryModule, LogisticsClientModule],
+  imports: [CobrosClientModule, DeliveriesModule, InventoryModule, LogisticsClientModule],
   controllers: [BusinessOrdersController, InternalBusinessOrdersController],
   providers: [OrdersService, PrismaOrdersRepository],
   exports: [OrdersService, PrismaOrdersRepository],

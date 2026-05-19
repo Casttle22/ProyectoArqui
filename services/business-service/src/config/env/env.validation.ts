@@ -10,4 +10,7 @@ export const envValidationSchema = Joi.object({
     .uri()
     .default('http://localhost:3002'),
   DATABASE_REQUIRE_SSL: Joi.boolean().default(true),
+  COBROS_API_URL: Joi.string()
+    .uri()
+    .default('https://cobros-api.fly.dev'),
 });
