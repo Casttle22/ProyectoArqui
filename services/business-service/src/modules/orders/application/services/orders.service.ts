@@ -2,14 +2,15 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
   Prisma,
   business_order_cancelled_by,
+  business_order_delivery_delivery_type,
   business_order_financial_status_snapshot,
   business_order_order_status,
-  business_order_penalty_type_snapshot,
   business_order_status_history_new_status,
   business_order_status_history_status_origin,
   cancellation_penalty_rule_applicable_order_status,
@@ -40,6 +41,14 @@ import {
   PrismaOrdersRepository,
 } from '../../infrastructure/repositories/prisma-orders.repository';
 import { LogisticsPayloadResponseDto } from '../../presentation/dto/logistics-payload-response.dto';
+import { CobrosClientService } from '../../../cobros-client/cobros-client.service';
+import { CreateCobrosPaymentDto } from '../../../cobros-client/presentation/dto/create-cobros-payment.dto';
+import { LogisticsClientService } from '../../../logistics-client/logistics-client.service';
+import { CreateLogisticsDeliveryDto } from '../../../logistics-client/presentation/dto/create-logistics-delivery.dto';
+import { LinkBusinessOrderDeliveryDto } from '../../../deliveries/presentation/dto/link-business-order-delivery.dto';
+import { DeliveriesService } from '../../../deliveries/application/services/deliveries.service';
+import { DispatchOrderResponseDto } from '../../presentation/dto/dispatch-order-response.dto';
+import { ProcessPaymentResponseDto } from '../../presentation/dto/process-payment-response.dto';
 
 type CancellationPenaltyEvaluation = {
   appliesPenalty: boolean;
@@ -53,9 +62,14 @@ type CancellationPenaltyEvaluation = {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly ordersRepository: PrismaOrdersRepository,
     private readonly inventoryService: InventoryService,
+    private readonly logisticsClientService: LogisticsClientService,
+    private readonly deliveriesService: DeliveriesService,
+    private readonly cobrosClientService: CobrosClientService,
   ) {}
 
   async create(
@@ -360,6 +374,146 @@ export class OrdersService {
     return mapBusinessOrderToResponseDto(updated);
   }
 
+  async requestLogisticsDispatch(
+    businessId: number,
+    businessOrderId: number,
+  ): Promise<DispatchOrderResponseDto> {
+    const order = await this.getOrderForLogisticsByBusinessAndId(
+      businessId,
+      businessOrderId,
+    );
+
+    if (this.isCancelledStatus(order.order_status)) {
+      throw new ConflictException('Cancelled orders cannot be dispatched.');
+    }
+
+    const allowedStatuses: business_order_order_status[] = [
+      business_order_order_status.confirmed,
+      business_order_order_status.preparing,
+      business_order_order_status.ready_for_pickup,
+    ];
+
+    if (!allowedStatuses.includes(order.order_status)) {
+      throw new ConflictException(
+        `Order status ${order.order_status} does not allow dispatching to logistics. ` +
+          `Allowed statuses: ${allowedStatuses.join(', ')}.`,
+      );
+    }
+
+    if (order.business_order_delivery) {
+      throw new ConflictException(
+        'A delivery is already linked to this order.',
+      );
+    }
+
+    if (!order.external_payment_code) {
+      throw new ConflictException(
+        'Payment has not been processed for this order. ' +
+          'Call POST /api/businesses/:businessId/orders/:businessOrderId/payment first.',
+      );
+    }
+
+    const details = order.business_order_detail.map(
+      (d) => `${d.quantity}x ${d.product_name_snapshot}`,
+    );
+
+    const deliveryDto: CreateLogisticsDeliveryDto = {
+      tipo_origen: 'pedido',
+      modulo_origen: 'negocios',
+      orden_id: order.business_order_id,
+      empresa_id: businessId,
+      cliente_id: order.external_customer_id,
+      categoria_codigo: 'PACKAGE',
+      metodo_pago: 'CASH',
+      tarifa_ofrecida: 0,
+      monto_cobrar: Number(order.total_paid_amount_snapshot),
+      distancia_estimada_km: undefined,
+      negocio_nombre: order.business.trade_name,
+      negocio_telefono: undefined,
+      negocio_direccion: order.business.address ?? '',
+      cliente_nombre: undefined,
+      cliente_telefono: undefined,
+      direccion_entrega: undefined,
+      detalles_orden: details,
+    };
+
+    this.logger.log(
+      `Creating delivery in logistics for order ${order.external_order_code}`,
+    );
+
+    const logisticsDelivery =
+      await this.logisticsClientService.createDelivery(deliveryDto);
+
+    this.logger.log(
+      `Delivery created in logistics with ID ${logisticsDelivery.id} for order ${order.external_order_code}`,
+    );
+
+    const linkDto: LinkBusinessOrderDeliveryDto = {
+      externalOrderCode: order.external_order_code,
+      deliveryType: business_order_delivery_delivery_type.home_delivery,
+      branchId: 0,
+      externalDeliveryCode: String(logisticsDelivery.id),
+      externalLogisticsOrderCode: undefined,
+      baseDeliveryFeeSnapshot: 0,
+      finalDeliveryFeeSnapshot: 0,
+      recipientNameSnapshot: undefined,
+      recipientPhoneSnapshot: undefined,
+      deliveryAddressSnapshot: undefined,
+      deliveryReferenceSnapshot: undefined,
+      deliveryNotesSnapshot: undefined,
+      estimatedDistanceKm: logisticsDelivery.distancia_estimada_km ?? undefined,
+      observation: 'Delivery dispatched from business service to logistics.',
+    };
+
+    const localDelivery = await this.deliveriesService.linkDelivery(linkDto);
+
+    return {
+      success: true,
+      logisticsDelivery,
+      localDelivery,
+    };
+  }
+
+  async processPayment(
+    businessId: number,
+    businessOrderId: number,
+  ): Promise<ProcessPaymentResponseDto> {
+    const order = await this.getOrderForLogisticsByBusinessAndId(
+      businessId,
+      businessOrderId,
+    );
+
+    if (this.isCancelledStatus(order.order_status)) {
+      throw new ConflictException('Cancelled orders cannot process payment.');
+    }
+
+    if (order.external_payment_code) {
+      throw new ConflictException(
+        `Payment already processed for this order. cobro_id: ${order.external_payment_code}`,
+      );
+    }
+
+    const paymentDto = this.buildCobrosPaymentDto(order);
+    const cobrosPayment =
+      await this.cobrosClientService.createPayment(paymentDto);
+
+    await this.ordersRepository.updatePaymentCode(
+      order.business_order_id,
+      cobrosPayment.payment_id,
+    );
+
+    this.logger.log(
+      `Payment processed for order ${order.external_order_code}: cobro_id ${cobrosPayment.payment_id}`,
+    );
+
+    return {
+      success: true,
+      cobro_id: cobrosPayment.payment_id,
+      status: cobrosPayment.status,
+      settlement_status: cobrosPayment.settlement_status,
+    };
+  }
+
   async evaluateCancellationPenalty(
     dto: EvaluateCancellationPenaltyDto,
   ): Promise<CancellationPenaltyEvaluationResponseDto> {
@@ -422,8 +576,7 @@ export class OrdersService {
         cancelled_by: dto.cancelledBy,
         cancellation_reason: dto.cancellationReason,
         penalty_applied: evaluation.appliesPenalty ? 1 : 0,
-        penalty_type_snapshot:
-          evaluation.penaltyType as business_order_penalty_type_snapshot | null,
+        penalty_type_snapshot: evaluation.penaltyType,
         penalty_value_snapshot:
           evaluation.penaltyValue !== null
             ? evaluation.penaltyValue.toFixed(2)
@@ -793,5 +946,33 @@ export class OrdersService {
     }
 
     return 'unique field';
+  }
+
+  private buildCobrosPaymentDto(
+    order: BusinessOrderLogisticsRecord,
+  ): CreateCobrosPaymentDto {
+    const details = order.business_order_detail.map((d) => ({
+      product_id: String(d.product_id),
+      product_name: d.product_name_snapshot,
+      quantity: d.quantity,
+      unit_price: Number(d.base_unit_price_snapshot),
+      item_discount: 0,
+      is_combo: false,
+    }));
+
+    return {
+      customer_id: String(order.external_customer_id),
+      courier_id: '00000000-0000-0000-0000-000000000000',
+      business_id: String(order.business_id),
+      delivery_address_id: '00000000-0000-0000-0000-000000000000',
+      reservation_id: '',
+      order_id: order.external_order_code,
+      currency_code: 'GTQ',
+      payment_method_code: 'CASH',
+      service_fee: Number(order.service_fee_amount_snapshot),
+      tip_amount: Number(order.tip_amount_snapshot),
+      items: details,
+      idempotency_key: `payment-${order.external_order_code}-${order.business_order_id}`,
+    };
   }
 }

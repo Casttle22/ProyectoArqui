@@ -27,7 +27,10 @@ import { RestoreProductDto } from '../dto/restore-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 
 @ApiTags('Products')
-@Controller('businesses/:businessId/products')
+@Controller([
+  'businesses/:businessId/products',
+  'negocios/businesses/:businessId/products',
+])
 export class BusinessProductsController {
   constructor(private readonly productsService: ProductsService) {}
 

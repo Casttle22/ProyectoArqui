@@ -1,0 +1,695 @@
+{
+  "info": {
+    "name": "Business Service MASTER",
+    "_postman_id": "business-service-master-2026-05-20",
+    "description": "Coleccion MASTER de business-service. Mantiene rutas publicas originales bajo /api y alias publicos bajo /api/negocios. Las rutas internas oficiales siguen bajo /api/internal. Incluye referencias para integracion con Logistica y Cobros sin inventar endpoints publicos inexistentes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://proyectoarqui.onrender.com", "type": "string" },
+    { "key": "apiBaseUrl", "value": "{{baseUrl}}/api", "type": "string" },
+    { "key": "negociosApiBaseUrl", "value": "{{baseUrl}}/api/negocios", "type": "string" },
+    { "key": "businessId", "value": "1", "type": "string" },
+    { "key": "businessOrderId", "value": "1", "type": "string" },
+    { "key": "scheduleId", "value": "1", "type": "string" },
+    { "key": "externalOrderCode", "value": "ORD-TEST", "type": "string" },
+    { "key": "externalDeliveryCode", "value": "DEL-TEST", "type": "string" },
+    { "key": "externalLogisticsOrderCode", "value": "LOG-TEST", "type": "string" },
+    { "key": "externalCourierId", "value": "101", "type": "string" },
+    { "key": "paymentId", "value": "PAY-TEST", "type": "string" },
+    { "key": "productId", "value": "1", "type": "string" },
+    { "key": "productTypeId", "value": "1", "type": "string" },
+    { "key": "promotionRequestId", "value": "1", "type": "string" },
+    { "key": "metricDate", "value": "2026-05-19", "type": "string" },
+    { "key": "metricsStartDate", "value": "2026-05-01", "type": "string" },
+    { "key": "metricsEndDate", "value": "2026-05-19", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{apiBaseUrl}}/health", "host": ["{{apiBaseUrl}}"], "path": ["health"] },
+            "description": "Health historico del servicio."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{negociosApiBaseUrl}}/health", "host": ["{{negociosApiBaseUrl}}"], "path": ["health"] },
+            "description": "Alias publico de health."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Businesses",
+      "item": [
+        {
+          "name": "GET /api/businesses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{apiBaseUrl}}/businesses", "host": ["{{apiBaseUrl}}"], "path": ["businesses"] },
+            "description": "Lista de negocios con ruta publica original."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.expect(pm.response.code).to.eql(200); });", "const body = pm.response.json();", "if (Array.isArray(body) && body.length && body[0].businessId) { pm.collectionVariables.set('businessId', String(body[0].businessId)); }"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/businesses/:businessId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}"] },
+            "description": "Consulta de negocio por id."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/businesses",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{apiBaseUrl}}/businesses", "host": ["{{apiBaseUrl}}"], "path": ["businesses"] },
+            "description": "Crea negocio usando la ruta original.",
+            "body": { "mode": "raw", "raw": "{\n  \"tradeName\": \"Demo Negocio MASTER\",\n  \"legalName\": \"Demo Negocio MASTER, S.A.\",\n  \"businessType\": \"beauty_store\",\n  \"description\": \"Negocio de prueba para la coleccion MASTER\",\n  \"address\": \"Zona 10, Ciudad de Guatemala\",\n  \"phone\": \"+50255550000\",\n  \"email\": \"master.negocio@example.com\",\n  \"taxId\": \"MASTER-NEGOCIO-001\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,409]); });", "if (pm.response.code === 201) { const body = pm.response.json(); if (body.businessId) { pm.collectionVariables.set('businessId', String(body.businessId)); } }"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}"] },
+            "description": "Actualiza negocio.",
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"Descripcion actualizada desde MASTER\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId/retire",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/retire", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "retire"] },
+            "description": "Retiro logico de negocio.",
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Retiro de prueba MASTER\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId/restore",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/restore", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "restore"] },
+            "description": "Restaura negocio retirado.",
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Restauracion de prueba MASTER\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId/availability",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/availability", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "availability"] },
+            "description": "Actualiza disponibilidad del negocio.",
+            "body": { "mode": "raw", "raw": "{\n  \"businessStatus\": \"active\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Schedules",
+      "item": [
+        {
+          "name": "GET /api/businesses/:businessId/schedules",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/schedules", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "schedules"] }, "description": "Lista horarios del negocio." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/businesses/:businessId/schedules",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/schedules", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "schedules"] }, "description": "Crea horario operativo.", "body": { "mode": "raw", "raw": "{\n  \"day_of_week\": \"monday\",\n  \"opening_time\": \"08:00:00\",\n  \"closing_time\": \"17:00:00\",\n  \"is_open\": true\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Product Types",
+      "item": [
+        {
+          "name": "GET /api/businesses/:businessId/product-types",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/product-types", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types"] }, "description": "Lista tipos de producto." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });", "const body = pm.response.code === 200 ? pm.response.json() : null;", "if (Array.isArray(body) && body.length) { pm.collectionVariables.set('productTypeId', String(body[0].product_type_id || body[0].productTypeId || 1)); }"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/businesses/:businessId/product-types",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/product-types", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types"] }, "description": "Crea tipo de producto.", "body": { "mode": "raw", "raw": "{\n  \"name\": \"Categoria MASTER\",\n  \"description\": \"Categoria de prueba\",\n  \"productTypeStatus\": \"active\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "GET /api/businesses/:businessId/products",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/products", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products"] }, "description": "Lista productos del negocio." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });", "const body = pm.response.code === 200 ? pm.response.json() : null;", "if (Array.isArray(body) && body.length) { pm.collectionVariables.set('productId', String(body[0].productId || body[0].product_id || 1)); }"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/businesses/:businessId/products",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/products", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products"] }, "description": "Crea producto con stock inicial.", "body": { "mode": "raw", "raw": "{\n  \"productTypeId\": {{productTypeId}},\n  \"name\": \"Producto MASTER\",\n  \"description\": \"Producto de prueba\",\n  \"internalCode\": \"MASTER-PROD-001\",\n  \"basePrice\": 25.5,\n  \"productStatus\": \"active\",\n  \"visibleInCatalog\": true,\n  \"stock\": {\n    \"availableStock\": 50,\n    \"minimumAlertStock\": 5\n  }\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/businesses/:businessId/catalog",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/catalog", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "catalog"] }, "description": "Catalogo publico operativo del negocio." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "GET /api/businesses/:businessId/inventory",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/inventory", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "inventory"] }, "description": "Resumen de inventario del negocio." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/businesses/:businessId/inventory/products/:productId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/inventory/products/{{productId}}", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "inventory", "products", "{{productId}}"] }, "description": "Stock de producto especifico." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId/inventory/products/:productId/stock",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/inventory/products/{{productId}}/stock", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "inventory", "products", "{{productId}}", "stock"] }, "description": "Ajusta stock disponible y alerta minima.", "body": { "mode": "raw", "raw": "{\n  \"availableStock\": 45,\n  \"minimumAlertStock\": 5,\n  \"reason\": \"Ajuste desde MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "POST /api/businesses/:businessId/orders",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders"] }, "description": "Crea pedido de negocio con reserva de inventario.", "body": { "mode": "raw", "raw": "{\n  \"externalOrderCode\": \"{{externalOrderCode}}\",\n  \"customerId\": 1001,\n  \"customerName\": \"Cliente MASTER\",\n  \"customerPhone\": \"+50255551111\",\n  \"deliveryAddress\": \"Zona 10, Guatemala\",\n  \"deliveryReference\": \"Edificio azul\",\n  \"notes\": \"Pedido creado desde coleccion MASTER\",\n  \"paymentMethodCode\": \"CASH\",\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 1\n    }\n  ]\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });", "if (pm.response.code === 201) { const body = pm.response.json(); if (body.businessOrderId) { pm.collectionVariables.set('businessOrderId', String(body.businessOrderId)); } if (body.externalOrderCode) { pm.collectionVariables.set('externalOrderCode', String(body.externalOrderCode)); } }"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/businesses/:businessId/orders",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders"] }, "description": "Lista pedidos del negocio." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/businesses/:businessId/orders/:businessOrderId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}"] }, "description": "Obtiene detalle de pedido." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/businesses/:businessId/orders/:businessOrderId/logistics",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/logistics", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "logistics"] }, "description": "Payload logistico publico del pedido." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId/orders/:businessOrderId/preparing",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/preparing", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "preparing"] }, "description": "Mueve pedido a preparing.", "body": { "mode": "raw", "raw": "{\n  \"observation\": \"Preparacion iniciada desde MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/businesses/:businessId/orders/:businessOrderId/ready-for-pickup",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/ready-for-pickup", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "ready-for-pickup"] }, "description": "Mueve pedido a ready_for_pickup.", "body": { "mode": "raw", "raw": "{\n  \"observation\": \"Pedido listo desde MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cobros Integration",
+      "item": [
+        {
+          "name": "POST /api/businesses/:businessId/orders/:businessOrderId/payment",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/payment", "host": ["{{apiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "payment"] }, "description": "Endpoint local real de business-service. Internamente llama al microservicio de Cobros y guarda el cobro_id como external_payment_code." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409,502]); });", "if (pm.response.code === 200) { const body = pm.response.json(); if (body.cobro_id) { pm.collectionVariables.set('paymentId', String(body.cobro_id)); } }"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Logistica Integration",
+      "item": [
+        {
+          "name": "GET /api/internal/business-orders/:externalOrderCode/logistics-payload",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/{{externalOrderCode}}/logistics-payload", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "{{externalOrderCode}}", "logistics-payload"] }, "description": "Contrato oficial que Logistica puede consumir para obtener payload logistico por codigo externo." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/:businessId/pedidos/:businessOrderId/estado-logistica",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/{{businessId}}/pedidos/{{businessOrderId}}/estado-logistica", "host": ["{{negociosApiBaseUrl}}"], "path": ["{{businessId}}", "pedidos", "{{businessOrderId}}", "estado-logistica"] }, "description": "Callback especifico que Logistica usa para notificar cambios de estado hacia Negocios.", "body": { "mode": "raw", "raw": "{\n  \"negocioId\": {{businessId}},\n  \"pedidoId\": {{businessOrderId}},\n  \"estado\": \"in_transit\",\n  \"codigo_entrega\": \"{{externalDeliveryCode}}\",\n  \"codigo_orden_logistica\": \"{{externalLogisticsOrderCode}}\",\n  \"repartidor_id\": {{externalCourierId}},\n  \"observacion\": \"Cambio de estado enviado desde Logistica\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Deliveries",
+      "item": [
+        {
+          "name": "POST /api/internal/business-orders/delivery/link",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/link", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "link"] }, "description": "Contrato oficial para vincular entrega a un pedido desde integracion externa.", "body": { "mode": "raw", "raw": "{\n  \"externalOrderCode\": \"{{externalOrderCode}}\",\n  \"deliveryType\": \"home_delivery\",\n  \"externalDeliveryCode\": \"{{externalDeliveryCode}}\",\n  \"externalLogisticsOrderCode\": \"{{externalLogisticsOrderCode}}\",\n  \"status\": \"pending_assignment\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/internal/business-orders/:externalOrderCode/delivery",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/{{externalOrderCode}}/delivery", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "{{externalOrderCode}}", "delivery"] }, "description": "Consulta entrega asociada al pedido por codigo externo." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/internal/business-orders/delivery/by-logistics-order/:externalLogisticsOrderCode",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/by-logistics-order/{{externalLogisticsOrderCode}}", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "by-logistics-order", "{{externalLogisticsOrderCode}}"] }, "description": "Busca entrega por codigo de orden de Logistica." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/internal/business-orders/delivery/update-status",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/update-status", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "update-status"] }, "description": "Actualiza estado operativo de entrega desde integracion externa.", "body": { "mode": "raw", "raw": "{\n  \"externalOrderCode\": \"{{externalOrderCode}}\",\n  \"externalDeliveryCode\": \"{{externalDeliveryCode}}\",\n  \"externalLogisticsOrderCode\": \"{{externalLogisticsOrderCode}}\",\n  \"newStatus\": \"in_transit\",\n  \"statusOrigin\": \"couriers\",\n  \"observation\": \"Actualizacion desde coleccion MASTER\",\n  \"externalCourierId\": \"{{externalCourierId}}\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Delivery Fee Adjustments",
+      "item": [
+        {
+          "name": "POST /api/internal/business-orders/delivery/fee-adjustments/request",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/fee-adjustments/request", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "fee-adjustments", "request"] }, "description": "Solicita ajuste de tarifa de entrega.", "body": { "mode": "raw", "raw": "{\n  \"externalOrderCode\": \"{{externalOrderCode}}\",\n  \"externalLogisticsOrderCode\": \"{{externalLogisticsOrderCode}}\",\n  \"requestedFee\": 35.5,\n  \"reason\": \"Ajuste operativo MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/internal/business-orders/delivery/fee-adjustments/by-order/:externalOrderCode",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/fee-adjustments/by-order/{{externalOrderCode}}", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "fee-adjustments", "by-order", "{{externalOrderCode}}"] }, "description": "Consulta ajustes por codigo de pedido." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/internal/business-orders/delivery/fee-adjustments/by-logistics-order/:externalLogisticsOrderCode",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/fee-adjustments/by-logistics-order/{{externalLogisticsOrderCode}}", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "fee-adjustments", "by-logistics-order", "{{externalLogisticsOrderCode}}"] }, "description": "Consulta ajustes por codigo logistico." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/internal/business-orders/delivery/fee-adjustments/resolve",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/internal/business-orders/delivery/fee-adjustments/resolve", "host": ["{{apiBaseUrl}}"], "path": ["internal", "business-orders", "delivery", "fee-adjustments", "resolve"] }, "description": "Resuelve ajuste de tarifa pendiente.", "body": { "mode": "raw", "raw": "{\n  \"externalLogisticsOrderCode\": \"{{externalLogisticsOrderCode}}\",\n  \"approved\": true,\n  \"resolvedBy\": \"business-service-master\",\n  \"observation\": \"Resolucion de prueba MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Promotions",
+      "item": [
+        {
+          "name": "POST /api/promotions/requests",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/promotions/requests", "host": ["{{apiBaseUrl}}"], "path": ["promotions", "requests"] }, "description": "Crea solicitud de promocion.", "body": { "mode": "raw", "raw": "{\n  \"businessId\": {{businessId}},\n  \"title\": \"Promo MASTER\",\n  \"description\": \"Promocion creada desde coleccion MASTER\",\n  \"requestedBy\": \"business-service-master\",\n  \"startDate\": \"2026-05-20\",\n  \"endDate\": \"2026-05-30\",\n  \"scopes\": []\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,201,400,404,409]); });", "if (pm.response.code === 200 || pm.response.code === 201) { const body = pm.response.json(); if (body.id) { pm.collectionVariables.set('promotionRequestId', String(body.id)); } }"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/promotions/requests",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/promotions/requests?businessId={{businessId}}", "host": ["{{apiBaseUrl}}"], "path": ["promotions", "requests"], "query": [{ "key": "businessId", "value": "{{businessId}}" }] }, "description": "Lista solicitudes de promocion." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/promotions/requests/:id",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/promotions/requests/{{promotionRequestId}}", "host": ["{{apiBaseUrl}}"], "path": ["promotions", "requests", "{{promotionRequestId}}"] }, "description": "Consulta solicitud de promocion por id." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/promotions/requests/:id/external-response",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/promotions/requests/{{promotionRequestId}}/external-response", "host": ["{{apiBaseUrl}}"], "path": ["promotions", "requests", "{{promotionRequestId}}", "external-response"] }, "description": "Registra respuesta externa sobre solicitud de promocion.", "body": { "mode": "raw", "raw": "{\n  \"status\": \"approved\",\n  \"externalPromotionId\": \"PROMO-EXT-001\",\n  \"observation\": \"Respuesta externa MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Metrics",
+      "item": [
+        {
+          "name": "GET /api/metrics/daily",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/metrics/daily?businessId={{businessId}}&date={{metricDate}}", "host": ["{{apiBaseUrl}}"], "path": ["metrics", "daily"], "query": [{ "key": "businessId", "value": "{{businessId}}" }, { "key": "date", "value": "{{metricDate}}" }] }, "description": "Obtiene metrica diaria del negocio." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/metrics/range",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/metrics/range?businessId={{businessId}}&startDate={{metricsStartDate}}&endDate={{metricsEndDate}}", "host": ["{{apiBaseUrl}}"], "path": ["metrics", "range"], "query": [{ "key": "businessId", "value": "{{businessId}}" }, { "key": "startDate", "value": "{{metricsStartDate}}" }, { "key": "endDate", "value": "{{metricsEndDate}}" }] }, "description": "Obtiene metricas por rango." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/metrics/summary",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{apiBaseUrl}}/metrics/summary?businessId={{businessId}}&startDate={{metricsStartDate}}&endDate={{metricsEndDate}}", "host": ["{{apiBaseUrl}}"], "path": ["metrics", "summary"], "query": [{ "key": "businessId", "value": "{{businessId}}" }, { "key": "startDate", "value": "{{metricsStartDate}}" }, { "key": "endDate", "value": "{{metricsEndDate}}" }] }, "description": "Resumen agregado de metricas." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/metrics/rebuild",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{apiBaseUrl}}/metrics/rebuild", "host": ["{{apiBaseUrl}}"], "path": ["metrics", "rebuild"] }, "description": "Reconstruye metricas para un rango.", "body": { "mode": "raw", "raw": "{\n  \"businessId\": {{businessId}},\n  \"startDate\": \"{{metricsStartDate}}\",\n  \"endDate\": \"{{metricsEndDate}}\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,201,400,404]); });"] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Alias /api/negocios",
+      "item": [
+        {
+          "name": "GET /api/negocios/health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/health", "host": ["{{negociosApiBaseUrl}}"], "path": ["health"] }, "description": "Alias publico de health." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses"] }, "description": "Alias publico de listado de negocios." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses"] }, "description": "Alias publico de creacion de negocio.", "body": { "mode": "raw", "raw": "{\n  \"tradeName\": \"Demo Negocio Alias\",\n  \"legalName\": \"Demo Negocio Alias, S.A.\",\n  \"businessType\": \"beauty_store\",\n  \"description\": \"Creado por alias /api/negocios\",\n  \"address\": \"Zona 14, Ciudad de Guatemala\",\n  \"phone\": \"+50255550001\",\n  \"email\": \"alias.negocio@example.com\",\n  \"taxId\": \"MASTER-NEGOCIO-ALIAS-001\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}"] }, "description": "Alias publico de consulta de negocio por id." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}"] }, "description": "Alias publico de actualizacion de negocio.", "body": { "mode": "raw", "raw": "{\n  \"description\": \"Descripcion actualizada desde alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/retire",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/retire", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "retire"] }, "description": "Alias publico de retiro logico de negocio.", "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Retiro de prueba alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/restore",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/restore", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "restore"] }, "description": "Alias publico de restauracion de negocio.", "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Restauracion de prueba alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/availability",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/availability", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "availability"] }, "description": "Alias publico de disponibilidad de negocio.", "body": { "mode": "raw", "raw": "{\n  \"businessStatus\": \"active\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/schedules",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/schedules", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "schedules"] }, "description": "Alias publico de listado de horarios." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses/:businessId/schedules",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/schedules", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "schedules"] }, "description": "Alias publico de creacion de horario.", "body": { "mode": "raw", "raw": "{\n  \"day_of_week\": \"monday\",\n  \"opening_time\": \"08:00:00\",\n  \"closing_time\": \"17:00:00\",\n  \"is_open\": true\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/schedules/:scheduleId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/schedules/{{scheduleId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "schedules", "{{scheduleId}}"] }, "description": "Alias publico de consulta de horario por id." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/schedules/:scheduleId",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/schedules/{{scheduleId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "schedules", "{{scheduleId}}"] }, "description": "Alias publico de actualizacion de horario.", "body": { "mode": "raw", "raw": "{\n  \"opening_time\": \"09:00:00\",\n  \"closing_time\": \"18:00:00\",\n  \"is_open\": true\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/product-types",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/product-types", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types"] }, "description": "Alias publico de listado de tipos de producto." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses/:businessId/product-types",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/product-types", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types"] }, "description": "Alias publico de creacion de tipo de producto.", "body": { "mode": "raw", "raw": "{\n  \"name\": \"Categoria Alias\",\n  \"description\": \"Categoria de prueba alias\",\n  \"productTypeStatus\": \"active\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/product-types/:productTypeId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/product-types/{{productTypeId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types", "{{productTypeId}}"] }, "description": "Alias publico de consulta de tipo de producto por id." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/product-types/:productTypeId",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/product-types/{{productTypeId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types", "{{productTypeId}}"] }, "description": "Alias publico de actualizacion de tipo de producto.", "body": { "mode": "raw", "raw": "{\n  \"description\": \"Categoria actualizada desde alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "DELETE /api/negocios/businesses/:businessId/product-types/:productTypeId",
+          "request": { "method": "DELETE", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/product-types/{{productTypeId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types", "{{productTypeId}}"] }, "description": "Alias publico de retiro logico de tipo de producto.", "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Retiro alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/product-types/:productTypeId/restore",
+          "request": { "method": "PATCH", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/product-types/{{productTypeId}}/restore", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "product-types", "{{productTypeId}}", "restore"] }, "description": "Alias publico de restauracion de tipo de producto." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/products",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/products", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products"] }, "description": "Alias publico de productos." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses/:businessId/products",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/products", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products"] }, "description": "Alias publico de creacion de producto.", "body": { "mode": "raw", "raw": "{\n  \"productTypeId\": {{productTypeId}},\n  \"name\": \"Producto Alias\",\n  \"description\": \"Producto de prueba alias\",\n  \"internalCode\": \"ALIAS-PROD-001\",\n  \"basePrice\": 25.5,\n  \"productStatus\": \"active\",\n  \"visibleInCatalog\": true,\n  \"stock\": {\n    \"availableStock\": 50,\n    \"minimumAlertStock\": 5\n  }\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/products/:productId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/products/{{productId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products", "{{productId}}"] }, "description": "Alias publico de consulta de producto por id." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/products/:productId",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/products/{{productId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products", "{{productId}}"] }, "description": "Alias publico de actualizacion de producto.", "body": { "mode": "raw", "raw": "{\n  \"description\": \"Producto actualizado desde alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "DELETE /api/negocios/businesses/:businessId/products/:productId",
+          "request": { "method": "DELETE", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/products/{{productId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products", "{{productId}}"] }, "description": "Alias publico de retiro logico de producto.", "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Retiro alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/products/:productId/restore",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/products/{{productId}}/restore", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "products", "{{productId}}", "restore"] }, "description": "Alias publico de restauracion de producto.", "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Restauracion alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/catalog",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/catalog", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "catalog"] }, "description": "Alias publico de catalogo." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/inventory",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/inventory", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "inventory"] }, "description": "Alias publico de inventory." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/inventory/products/:productId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/inventory/products/{{productId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "inventory", "products", "{{productId}}"] }, "description": "Alias publico de stock de producto especifico." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/inventory/products/:productId/stock",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/inventory/products/{{productId}}/stock", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "inventory", "products", "{{productId}}", "stock"] }, "description": "Alias publico de actualizacion de stock.", "body": { "mode": "raw", "raw": "{\n  \"availableStock\": 45,\n  \"minimumAlertStock\": 5,\n  \"reason\": \"Ajuste desde alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses/:businessId/orders",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders"] }, "description": "Alias publico de creacion de pedido.", "body": { "mode": "raw", "raw": "{\n  \"externalOrderCode\": \"{{externalOrderCode}}\",\n  \"customerId\": 1002,\n  \"customerName\": \"Cliente Alias\",\n  \"customerPhone\": \"+50255552222\",\n  \"deliveryAddress\": \"Zona 15, Guatemala\",\n  \"deliveryReference\": \"Casa verde\",\n  \"notes\": \"Pedido por alias /api/negocios\",\n  \"paymentMethodCode\": \"CASH\",\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 1\n    }\n  ]\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/orders",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders"] }, "description": "Alias publico de listado de pedidos." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/orders/:businessOrderId",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}"] }, "description": "Alias publico de detalle de pedido." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/businesses/:businessId/orders/:businessOrderId/logistics",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/logistics", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "logistics"] }, "description": "Alias publico del payload logistico del pedido." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/orders/:businessOrderId/preparing",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/preparing", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "preparing"] }, "description": "Alias publico de cambio a preparing.", "body": { "mode": "raw", "raw": "{\n  \"observation\": \"Preparacion iniciada por alias\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/businesses/:businessId/orders/:businessOrderId/ready-for-pickup",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/ready-for-pickup", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "ready-for-pickup"] }, "description": "Alias publico de cambio a ready-for-pickup.", "body": { "mode": "raw", "raw": "{\n  \"observation\": \"Pedido listo por alias\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses/:businessId/orders/:businessOrderId/payment",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/payment", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "payment"] }, "description": "Alias publico del endpoint local de Cobros Integration." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409,502]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/businesses/:businessId/orders/:businessOrderId/dispatch",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/businesses/{{businessId}}/orders/{{businessOrderId}}/dispatch", "host": ["{{negociosApiBaseUrl}}"], "path": ["businesses", "{{businessId}}", "orders", "{{businessOrderId}}", "dispatch"] }, "description": "Alias publico del despacho a Logistica. Exige pago previo procesado." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409,502]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/promotions/requests",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/requests", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "requests"] }, "description": "Alias publico de creacion de solicitud de promocion.", "body": { "mode": "raw", "raw": "{\n  \"businessId\": {{businessId}},\n  \"title\": \"Promo Alias\",\n  \"description\": \"Promocion creada desde alias MASTER\",\n  \"requestedBy\": \"business-service-master-alias\",\n  \"startDate\": \"2026-05-20\",\n  \"endDate\": \"2026-05-30\",\n  \"scopes\": []\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/promotions/requests",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/requests?businessId={{businessId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "requests"], "query": [{ "key": "businessId", "value": "{{businessId}}" }] }, "description": "Alias publico de promociones." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/promotions/requests/:id",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/requests/{{promotionRequestId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "requests", "{{promotionRequestId}}"] }, "description": "Alias publico de consulta de solicitud de promocion por id." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "PATCH /api/negocios/promotions/requests/:id/external-response",
+          "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/requests/{{promotionRequestId}}/external-response", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "requests", "{{promotionRequestId}}", "external-response"] }, "description": "Alias publico de respuesta externa de promocion.", "body": { "mode": "raw", "raw": "{\n  \"status\": \"approved\",\n  \"externalPromotionId\": \"PROMO-EXT-ALIAS-001\",\n  \"observation\": \"Respuesta externa alias MASTER\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/promotions/references/sync",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/references/sync", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "references", "sync"] }, "description": "Alias publico de sincronizacion de referencia de promocion.", "body": { "mode": "raw", "raw": "{\n  \"businessId\": {{businessId}},\n  \"externalPromotionId\": \"PROMO-EXT-ALIAS-001\",\n  \"title\": \"Promo Alias\",\n  \"status\": \"active\",\n  \"startDate\": \"2026-05-20\",\n  \"endDate\": \"2026-05-30\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,201,400,404,409]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/promotions/references",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/references?businessId={{businessId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "references"], "query": [{ "key": "businessId", "value": "{{businessId}}" }] }, "description": "Alias publico de consulta de referencias de promocion." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/promotions/sync-history",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/promotions/sync-history?businessId={{businessId}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["promotions", "sync-history"], "query": [{ "key": "businessId", "value": "{{businessId}}" }] }, "description": "Alias publico de historial de sincronizacion de promociones." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/metrics/daily",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/metrics/daily?businessId={{businessId}}&date={{metricDate}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["metrics", "daily"], "query": [{ "key": "businessId", "value": "{{businessId}}" }, { "key": "date", "value": "{{metricDate}}" }] }, "description": "Alias publico de metrica diaria." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/metrics/range",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/metrics/range?businessId={{businessId}}&startDate={{metricsStartDate}}&endDate={{metricsEndDate}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["metrics", "range"], "query": [{ "key": "businessId", "value": "{{businessId}}" }, { "key": "startDate", "value": "{{metricsStartDate}}" }, { "key": "endDate", "value": "{{metricsEndDate}}" }] }, "description": "Alias publico de metricas por rango." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "GET /api/negocios/metrics/summary",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{negociosApiBaseUrl}}/metrics/summary?businessId={{businessId}}&startDate={{metricsStartDate}}&endDate={{metricsEndDate}}", "host": ["{{negociosApiBaseUrl}}"], "path": ["metrics", "summary"], "query": [{ "key": "businessId", "value": "{{businessId}}" }, { "key": "startDate", "value": "{{metricsStartDate}}" }, { "key": "endDate", "value": "{{metricsEndDate}}" }] }, "description": "Alias publico de resumen de metricas." },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,400,404]); });"] } }],
+          "response": []
+        },
+        {
+          "name": "POST /api/negocios/metrics/rebuild",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{negociosApiBaseUrl}}/metrics/rebuild", "host": ["{{negociosApiBaseUrl}}"], "path": ["metrics", "rebuild"] }, "description": "Alias publico de reconstruccion de metricas.", "body": { "mode": "raw", "raw": "{\n  \"businessId\": {{businessId}},\n  \"startDate\": \"{{metricsStartDate}}\",\n  \"endDate\": \"{{metricsEndDate}}\"\n}" } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status expected', function () { pm.expect(pm.response.code).to.be.oneOf([200,201,400,404]); });"] } }],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

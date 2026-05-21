@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { RebuildMetricsDto } from './dto/rebuild-metrics.dto';
 import { MetricsService } from './metrics.service';
 
-@Controller('metrics')
+@Controller(['metrics', 'negocios/metrics'])
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 

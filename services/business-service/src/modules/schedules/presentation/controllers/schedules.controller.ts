@@ -23,7 +23,10 @@ import { UpdateScheduleDto } from '../../application/dto/update-schedule.dto';
 import { SchedulesService } from '../../application/services/schedules.service';
 
 @ApiTags('Schedules')
-@Controller('businesses/:businessId/schedules')
+@Controller([
+  'businesses/:businessId/schedules',
+  'negocios/businesses/:businessId/schedules',
+])
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 

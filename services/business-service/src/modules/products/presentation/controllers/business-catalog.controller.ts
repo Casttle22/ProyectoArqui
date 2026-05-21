@@ -9,7 +9,10 @@ import { ProductsService } from '../../application/services/products.service';
 import { BusinessCatalogResponseDto } from '../dto/business-catalog-response.dto';
 
 @ApiTags('Catalog')
-@Controller('businesses/:businessId/catalog')
+@Controller([
+  'businesses/:businessId/catalog',
+  'negocios/businesses/:businessId/catalog',
+])
 export class BusinessCatalogController {
   constructor(private readonly productsService: ProductsService) {}
 

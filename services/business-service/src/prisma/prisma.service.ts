@@ -30,7 +30,7 @@ export class PrismaService
       connectionLimit: 5,
       allowPublicKeyRetrieval: true,
       ssl:
-        process.env.NODE_ENV === 'production'
+        process.env.DATABASE_REQUIRE_SSL === 'true'
           ? { rejectUnauthorized: true }
           : undefined,
     });

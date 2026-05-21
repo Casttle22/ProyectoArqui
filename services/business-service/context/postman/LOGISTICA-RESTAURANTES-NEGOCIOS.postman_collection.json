@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "Logistica - Restaurantes y Negocios",
+    "_postman_id": "logistica-restaurantes-negocios-04052026",
+    "description": "Coleccion para que Restaurantes y Negocios creen entregas y validen el flujo de notificaciones.\n\nCAMPO CLAVE: modulo_origen\n  - restaurantes → notifica a RESTAURANTES_API_URL\n  - negocios    → notifica a NEGOCIOS_API_URL\n  - paqueteria  → solo persistencia interna (sin callback)\n\nNEGOCIOS: Usar modulo_origen='negocios'. Logistica notificara cambios de estado a:\n  PATCH /negocios/{negocioId}/pedidos/{pedidoId}/estado-logistica\n\nRESTAURANTES: Usa modulo_origen='restaurantes' (default). Logistica notifica a:\n  PUT /restaurantes/{restauranteId}/pedidos/{pedidoId}/estado",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "logistica_base_url", "value": "https://modulo-logistica.fly.dev", "type": "string" },
+    { "key": "restaurantes_base_url", "value": "https://restaurantes.fly.dev/api", "type": "string" },
+    { "key": "negocios_base_url", "value": "https://proyectoarqui.onrender.com", "type": "string" },
+    { "key": "restaurante_id", "value": "1", "type": "string" },
+    { "key": "negocio_id", "value": "1", "type": "string" },
+    { "key": "pedido_id", "value": "2", "type": "string" },
+    { "key": "entrega_id", "value": "4", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "00 - Health Checks",
+      "item": [
+        {
+          "name": "Health Logistica",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{logistica_base_url}}/health", "host": ["{{logistica_base_url}}"], "path": ["health"] },
+            "description": "Verifica que Logistica este corriendo."
+          },
+          "response": []
+        },
+        {
+          "name": "Health Restaurantes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "https://restaurantes.fly.dev/health", "protocol": "https", "host": ["restaurantes", "fly", "dev"], "path": ["health"] },
+            "description": "Verifica que Restaurantes este desplegado."
+          },
+          "response": []
+        },
+        {
+          "name": "Health Negocios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{negocios_base_url}}/health", "host": ["{{negocios_base_url}}"], "path": ["health"] },
+            "description": "Verifica que Negocios este disponible."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - RESTAURANTES: Crear pedido y entrega",
+      "item": [
+        {
+          "name": "Crear Pedido Real En Restaurantes",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{restaurantes_base_url}}/restaurantes/{{restaurante_id}}/pedidos", "host": ["{{restaurantes_base_url}}"], "path": ["restaurantes", "{{restaurante_id}}", "pedidos"] },
+            "description": "Crea un pedido real en Restaurantes.",
+            "body": { "mode": "raw", "raw": "{\n  \"cliente_id\": 100,\n  \"direccion_entrega\": \"Direccion test logistica\",\n  \"notas\": \"Pedido creado para integracion con Logistica\",\n  \"descuento_aplicado\": 0,\n  \"items\": [\n    { \"producto_id\": 2, \"cantidad\": 1, \"descuento\": 0 }\n  ]\n}" }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Payload Logistico Desde Restaurantes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{restaurantes_base_url}}/restaurantes/{{restaurante_id}}/pedidos/{{pedido_id}}/logistica", "host": ["{{restaurantes_base_url}}"], "path": ["restaurantes", "{{restaurante_id}}", "pedidos", "{{pedido_id}}", "logistica"] },
+            "description": "Endpoint que Logistica consume para crear una entrega con datos reales del pedido."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Entrega En Logistica (modulo_origen: restaurantes)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{logistica_base_url}}/api/logistica/entregas/restaurantes/{{restaurante_id}}/pedidos/{{pedido_id}}", "host": ["{{logistica_base_url}}"], "path": ["api", "logistica", "entregas", "restaurantes", "{{restaurante_id}}", "pedidos", "{{pedido_id}}"] },
+            "description": "Crea entrega con modulo_origen='restaurantes'. Logistica notificara a RESTAURANTES_API_URL.",
+            "body": { "mode": "raw", "raw": "{\n  \"cliente_nombre\": \"Cliente Integracion\",\n  \"cliente_telefono\": \"5555-1111\",\n  \"destino_lat\": 14.84,\n  \"destino_lng\": -91.52\n}" }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - NEGOCIOS: Crear entrega directa",
+      "item": [
+        {
+          "name": "Crear Entrega En Logistica (modulo_origen: negocios)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{logistica_base_url}}/api/logistica/entregas", "host": ["{{logistica_base_url}}"], "path": ["api", "logistica", "entregas"] },
+            "description": "Negocios crea una entrega directamente con modulo_origen='negocios'. Logistica notificara los cambios de estado a NEGOCIOS_API_URL.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo_origen\": \"pedido\",\n  \"modulo_origen\": \"negocios\",\n  \"orden_id\": 1001,\n  \"empresa_id\": 1,\n  \"cliente_id\": 500,\n  \"categoria_codigo\": \"PACKAGE\",\n  \"metodo_pago\": \"CASH\",\n  \"tarifa_ofrecida\": 30.00,\n  \"monto_cobrar\": 200.00,\n  \"distancia_estimada_km\": 5.5,\n  \"negocio_nombre\": \"Tienda Don Juan\",\n  \"negocio_telefono\": \"5555-3333\",\n  \"negocio_direccion\": \"Av. Central 10-20, Zona 1\",\n  \"origen_coordenadas\": { \"lat\": 14.8400, \"lng\": -91.5150 },\n  \"cliente_nombre\": \"Maria Lopez\",\n  \"cliente_telefono\": \"5555-4444\",\n  \"direccion_entrega\": \"6a Calle 5-30, Zona 2\",\n  \"referencia_direccion\": \"Casa blanca esquina\",\n  \"instrucciones_entrega\": \"Dejar en recepcion\",\n  \"destino_coordenadas\": { \"lat\": 14.8450, \"lng\": -91.5100 },\n  \"detalles_orden\": [\"2x Producto A\", \"1x Producto B\"],\n  \"fecha_entrega_estimada\": null\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Consultar Entregas En Logistica",
+      "item": [
+        {
+          "name": "Consultar Entrega Por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{logistica_base_url}}/api/logistica/entregas/{{entrega_id}}", "host": ["{{logistica_base_url}}"], "path": ["api", "logistica", "entregas", "{{entrega_id}}"] },
+            "description": "Detalle completo de la entrega. Incluye modulo_origen en la respuesta."
+          },
+          "response": []
+        },
+        {
+          "name": "Historial Entrega",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{logistica_base_url}}/api/logistica/entregas/{{entrega_id}}/historial", "host": ["{{logistica_base_url}}"], "path": ["api", "logistica", "entregas", "{{entrega_id}}", "historial"] },
+            "description": "Historial interno de estados de Logistica."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar entregas por modulo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{logistica_base_url}}/api/logistica/entregas?modulo_origen=restaurantes&page=1&limit=10",
+              "host": ["{{logistica_base_url}}"],
+              "path": ["api", "logistica", "entregas"],
+              "query": [
+                { "key": "modulo_origen", "value": "restaurantes", "description": "Cambiar a 'negocios' para ver solo las de Negocios" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Filtra entregas por modulo_origen. Cambiar el query a 'negocios' segun corresponda."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Notificaciones Hacia Modulo Origen",
+      "item": [
+        {
+          "name": "Ver notificaciones por entrega",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{logistica_base_url}}/api/logistica/notificaciones?entrega_id={{entrega_id}}", "host": ["{{logistica_base_url}}"], "path": ["api", "logistica", "notificaciones"], "query": [{ "key": "entrega_id", "value": "{{entrega_id}}" }] },
+            "description": "Muestra si las notificaciones de estado hacia Restaurantes o Negocios fueron exitosas.\n\n- Si exitosa=true → el modulo origen recibio el callback.\n- Si exitosa=false → revisar que el modulo origen exponga el endpoint de notificacion."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Verificar estado en modulo origen",
+      "item": [
+        {
+          "name": "[Restaurantes] Consultar Pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{restaurantes_base_url}}/restaurantes/{{restaurante_id}}/pedidos/{{pedido_id}}", "host": ["{{restaurantes_base_url}}"], "path": ["restaurantes", "{{restaurante_id}}", "pedidos", "{{pedido_id}}"] },
+            "description": "Confirma que Restaurante cambio su estado despues de recibir notificaciones de Logistica."
+          },
+          "response": []
+        },
+        {
+          "name": "[Restaurantes] Historial Pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{restaurantes_base_url}}/restaurantes/{{restaurante_id}}/pedidos/{{pedido_id}}/historial", "host": ["{{restaurantes_base_url}}"], "path": ["restaurantes", "{{restaurante_id}}", "pedidos", "{{pedido_id}}", "historial"] },
+            "description": "Historial en Restaurante. Debe reflejar Recibido, Listo, En Camino y Entregado."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

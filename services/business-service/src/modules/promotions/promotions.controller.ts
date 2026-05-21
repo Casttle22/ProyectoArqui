@@ -12,7 +12,7 @@ import { RespondPromotionRequestDto } from './dto/respond-promotion-request.dto'
 import { SyncPromotionReferenceDto } from './dto/sync-promotion-reference.dto';
 import { PromotionsService } from './promotions.service';
 
-@Controller('promotions')
+@Controller(['promotions', 'negocios/promotions'])
 export class PromotionsController {
   constructor(private readonly promotionsService: PromotionsService) {}
 
