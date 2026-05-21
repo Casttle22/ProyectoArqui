@@ -1,9 +1,4 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
@@ -12,6 +7,11 @@ import {
   CobrosApiResponseDto,
   CobrosPaymentResponseDto,
 } from './presentation/dto/cobros-payment-response.dto';
+
+type CobrosHealthResponse = {
+  ok?: boolean;
+  service?: string;
+};
 
 @Injectable()
 export class CobrosClientService {
@@ -45,9 +45,7 @@ export class CobrosClientService {
     }
   }
 
-  async getPayment(
-    paymentId: string,
-  ): Promise<CobrosPaymentResponseDto> {
+  async getPayment(paymentId: string): Promise<CobrosPaymentResponseDto> {
     try {
       const { data } = await firstValueFrom(
         this.httpService.get<CobrosApiResponseDto<CobrosPaymentResponseDto>>(
@@ -88,7 +86,9 @@ export class CobrosClientService {
   async checkHealth(): Promise<boolean> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/api/cobros/health`),
+        this.httpService.get<CobrosHealthResponse>(
+          `${this.baseUrl}/api/cobros/health`,
+        ),
       );
       return data?.ok === true && data?.service === 'cobros';
     } catch {

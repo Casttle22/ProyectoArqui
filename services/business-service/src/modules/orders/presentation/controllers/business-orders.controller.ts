@@ -26,7 +26,10 @@ import { ProcessPaymentResponseDto } from '../dto/process-payment-response.dto';
 import { UpdateBusinessOrderStatusDto } from '../dto/update-business-order-status.dto';
 
 @ApiTags('Business Orders')
-@Controller('businesses/:businessId/orders')
+@Controller([
+  'businesses/:businessId/orders',
+  'negocios/businesses/:businessId/orders',
+])
 export class BusinessOrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 

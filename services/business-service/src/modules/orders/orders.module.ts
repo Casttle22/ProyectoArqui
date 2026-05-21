@@ -9,7 +9,12 @@ import { BusinessOrdersController } from './presentation/controllers/business-or
 import { InternalBusinessOrdersController } from './presentation/controllers/internal-business-orders.controller';
 
 @Module({
-  imports: [CobrosClientModule, DeliveriesModule, InventoryModule, LogisticsClientModule],
+  imports: [
+    CobrosClientModule,
+    DeliveriesModule,
+    InventoryModule,
+    LogisticsClientModule,
+  ],
   controllers: [BusinessOrdersController, InternalBusinessOrdersController],
   providers: [OrdersService, PrismaOrdersRepository],
   exports: [OrdersService, PrismaOrdersRepository],

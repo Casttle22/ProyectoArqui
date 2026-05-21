@@ -24,7 +24,10 @@ import { SoftDeleteProductTypeDto } from '../dto/soft-delete-product-type.dto';
 import { UpdateProductTypeDto } from '../dto/update-product-type.dto';
 
 @ApiTags('product-types')
-@Controller('businesses/:businessId/product-types')
+@Controller([
+  'businesses/:businessId/product-types',
+  'negocios/businesses/:businessId/product-types',
+])
 export class ProductTypesController {
   constructor(private readonly productTypesService: ProductTypesService) {}
 

@@ -25,7 +25,7 @@ import { UpdateBusinessAvailabilityDto } from '../dto/update-business-availabili
 import { UpdateBusinessDto } from '../dto/update-business.dto';
 
 @ApiTags('Businesses')
-@Controller('businesses')
+@Controller(['businesses', 'negocios/businesses'])
 export class BusinessesController {
   constructor(private readonly businessService: BusinessService) {}
 

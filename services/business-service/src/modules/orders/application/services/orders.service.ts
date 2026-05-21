@@ -11,7 +11,6 @@ import {
   business_order_delivery_delivery_type,
   business_order_financial_status_snapshot,
   business_order_order_status,
-  business_order_penalty_type_snapshot,
   business_order_status_history_new_status,
   business_order_status_history_status_origin,
   cancellation_penalty_rule_applicable_order_status,
@@ -397,7 +396,7 @@ export class OrdersService {
     if (!allowedStatuses.includes(order.order_status)) {
       throw new ConflictException(
         `Order status ${order.order_status} does not allow dispatching to logistics. ` +
-        `Allowed statuses: ${allowedStatuses.join(', ')}.`,
+          `Allowed statuses: ${allowedStatuses.join(', ')}.`,
       );
     }
 
@@ -410,7 +409,7 @@ export class OrdersService {
     if (!order.external_payment_code) {
       throw new ConflictException(
         'Payment has not been processed for this order. ' +
-        'Call POST /api/businesses/:businessId/orders/:businessOrderId/payment first.',
+          'Call POST /api/businesses/:businessId/orders/:businessOrderId/payment first.',
       );
     }
 
@@ -495,7 +494,8 @@ export class OrdersService {
     }
 
     const paymentDto = this.buildCobrosPaymentDto(order);
-    const cobrosPayment = await this.cobrosClientService.createPayment(paymentDto);
+    const cobrosPayment =
+      await this.cobrosClientService.createPayment(paymentDto);
 
     await this.ordersRepository.updatePaymentCode(
       order.business_order_id,
@@ -576,8 +576,7 @@ export class OrdersService {
         cancelled_by: dto.cancelledBy,
         cancellation_reason: dto.cancellationReason,
         penalty_applied: evaluation.appliesPenalty ? 1 : 0,
-        penalty_type_snapshot:
-          evaluation.penaltyType as business_order_penalty_type_snapshot | null,
+        penalty_type_snapshot: evaluation.penaltyType,
         penalty_value_snapshot:
           evaluation.penaltyValue !== null
             ? evaluation.penaltyValue.toFixed(2)

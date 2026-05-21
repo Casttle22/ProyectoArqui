@@ -21,9 +21,7 @@ import {
   LogisticsCallbackDto,
   LogisticsDeliveryStatus,
 } from '../dto/logistics-callback.dto';
-import {
-  BusinessOrderDeliveryResponseDto,
-} from '../../../deliveries/presentation/dto/business-order-delivery-response.dto';
+import { BusinessOrderDeliveryResponseDto } from '../../../deliveries/presentation/dto/business-order-delivery-response.dto';
 import {
   business_order_delivery_delivery_status,
   business_order_delivery_status_history_status_origin,
@@ -57,9 +55,7 @@ const STATUS_MAP: Record<
 export class LogisticsCallbackController {
   private readonly logger = new Logger(LogisticsCallbackController.name);
 
-  constructor(
-    private readonly deliveriesService: DeliveriesService,
-  ) {}
+  constructor(private readonly deliveriesService: DeliveriesService) {}
 
   @Patch(':businessId/pedidos/:businessOrderId/estado-logistica')
   @HttpCode(HttpStatus.OK)

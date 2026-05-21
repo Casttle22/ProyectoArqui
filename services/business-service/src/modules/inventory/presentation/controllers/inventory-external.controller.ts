@@ -11,7 +11,10 @@ import { InventoryService } from '../../application/services/inventory.service';
 import { UpdateProductStockDto } from '../dto/inventory.dto';
 
 @ApiTags('Inventory (External - Broker)')
-@Controller('businesses/:businessId/inventory')
+@Controller([
+  'businesses/:businessId/inventory',
+  'negocios/businesses/:businessId/inventory',
+])
 export class InventoryExternalController {
   constructor(private readonly inventoryService: InventoryService) {}
 

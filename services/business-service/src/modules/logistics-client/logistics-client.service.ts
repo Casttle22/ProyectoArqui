@@ -1,14 +1,13 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { CreateLogisticsDeliveryDto } from './presentation/dto/create-logistics-delivery.dto';
 import { LogisticsDeliveryResponseDto } from './presentation/dto/logistics-delivery-response.dto';
+
+type LogisticsHealthResponse = {
+  status?: string;
+};
 
 @Injectable()
 export class LogisticsClientService {
@@ -19,7 +18,10 @@ export class LogisticsClientService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.baseUrl = this.configService.get<string>('BROKER_SERVICE_URL', 'http://localhost:3002');
+    this.baseUrl = this.configService.get<string>(
+      'BROKER_SERVICE_URL',
+      'http://localhost:3002',
+    );
   }
 
   async createDelivery(
@@ -39,9 +41,7 @@ export class LogisticsClientService {
     }
   }
 
-  async getDelivery(
-    deliveryId: number,
-  ): Promise<LogisticsDeliveryResponseDto> {
+  async getDelivery(deliveryId: number): Promise<LogisticsDeliveryResponseDto> {
     try {
       const { data } = await firstValueFrom(
         this.httpService.get<LogisticsDeliveryResponseDto>(
@@ -58,12 +58,10 @@ export class LogisticsClientService {
     }
   }
 
-  async getDeliveryHistory(
-    deliveryId: number,
-  ): Promise<unknown> {
+  async getDeliveryHistory(deliveryId: number): Promise<unknown> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get(
+        this.httpService.get<unknown>(
           `${this.baseUrl}/api/logistica/entregas/${deliveryId}/historial`,
         ),
       );
@@ -84,9 +82,12 @@ export class LogisticsClientService {
   ): Promise<unknown> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/api/logistica/entregas`, {
-          params: { modulo_origen: moduloOrigen, page, limit },
-        }),
+        this.httpService.get<unknown>(
+          `${this.baseUrl}/api/logistica/entregas`,
+          {
+            params: { modulo_origen: moduloOrigen, page, limit },
+          },
+        ),
       );
       return data;
     } catch (error) {
@@ -98,7 +99,7 @@ export class LogisticsClientService {
   async checkHealth(): Promise<boolean> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/health`),
+        this.httpService.get<LogisticsHealthResponse>(`${this.baseUrl}/health`),
       );
       return data?.status === 'ok' || data?.status === 'UP';
     } catch {
